@@ -117,7 +117,14 @@ export class VideoController {
             console.log("-> Obteniendo información del video con yt-dlp...");
             let videoInfo = {};
             try {
-                const { stdout } = await execFilePromise(ytDlpPath, ["--dump-json", "--no-warnings", "--no-check-certificate", videoUrl], { maxBuffer: 1024 * 1024 * 10 });
+                const dumpArgs = ["--dump-json", "--no-warnings", "--no-check-certificate"];
+                const cookiesPath = path.join(process.cwd(), 'cookies.txt');
+                if (fs.existsSync(cookiesPath)) {
+                    dumpArgs.push("--cookies", cookiesPath);
+                }
+                dumpArgs.push(videoUrl);
+
+                const { stdout } = await execFilePromise(ytDlpPath, dumpArgs, { maxBuffer: 1024 * 1024 * 10 });
                 videoInfo = JSON.parse(stdout);
             } catch (e) {
                 console.warn("No se pudo obtener la metadata (Dump JSON falló). Procediendo con la descarga a ciegas como en server_copia...");
