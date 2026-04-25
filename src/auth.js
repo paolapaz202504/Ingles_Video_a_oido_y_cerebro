@@ -17,10 +17,11 @@ export function setupAuth() {
       btn.id = 'btn-api-key';
       btn.textContent = '🔑 API Key';
       btn.className = 'ui-btn';
-      btn.style.marginLeft = '1rem';
       btn.onclick = () => {
         showApiKeyModal();
       };
+      const container = document.getElementById('api-key-container');
+      if (container) container.appendChild(btn);
     }
     return btn;
   }
@@ -33,28 +34,45 @@ export function setupAuth() {
       userProfile.style.display = 'flex';
       document.getElementById('user-avatar').src = currentUser.picture;
       document.getElementById('user-name').textContent = currentUser.given_name || currentUser.name;
-      userProfile.appendChild(apiKeyBtn);
     } else {
-      googleBtnContainer.style.display = 'flex';
-      googleBtnContainer.style.alignItems = 'center';
+      googleBtnContainer.style.display = 'block';
       userProfile.style.display = 'none';
-      googleBtnContainer.appendChild(apiKeyBtn);
 
       const initGoogleBtn = () => {
         if (window.google) {
           window.google.accounts.id.disableAutoSelect();
+          
+          let signinDiv = document.querySelector('.g_id_signin');
+          if (!signinDiv) {
+            signinDiv = document.createElement('div');
+            signinDiv.className = 'g_id_signin';
+            googleBtnContainer.appendChild(signinDiv);
+          }
+
           // Forzar el renderizado manual del botón para evitar el bloqueo por contenedor oculto
           const onloadDiv = document.getElementById('g_id_onload');
-          const signinDiv = document.querySelector('.g_id_signin');
-          if (onloadDiv && signinDiv && onloadDiv.dataset.client_id) {
-            window.google.accounts.id.initialize({ client_id: onloadDiv.dataset.client_id, callback: handleCredentialResponse });
+          
+          // Usar getAttribute es más seguro que dataset para evitar problemas de camelCase en JavaScript
+          const clientId = onloadDiv ? onloadDiv.getAttribute('data-client_id') : null;
+          
+          if (signinDiv && clientId) {
+            window.google.accounts.id.initialize({ client_id: clientId, callback: handleCredentialResponse });
             window.google.accounts.id.renderButton(signinDiv, { theme: "outline", size: "large" });
+          } else if (!clientId) {
+            console.error("❌ No se encontró el atributo data-client_id en el HTML para cargar Google Sign-In.");
           }
         }
       };
 
-      if (window.google) initGoogleBtn();
-      else {
+      if (window.google) {
+        initGoogleBtn();
+      } else {
+        // Inyectamos el script oficial si por algún motivo no se cargó en el HTML
+        if (!document.querySelector('script[src="https://accounts.google.com/gsi/client"]')) {
+          const script = document.createElement('script');
+          script.src = "https://accounts.google.com/gsi/client";
+          document.head.appendChild(script);
+        }
         const checkGoogle = setInterval(() => { if (window.google) { clearInterval(checkGoogle); initGoogleBtn(); } }, 100);
       }
     }

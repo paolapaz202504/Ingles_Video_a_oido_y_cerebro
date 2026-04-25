@@ -10,6 +10,15 @@
     <script src="https://accounts.google.com/gsi/client" async defer></script>
   </head>
   <body>
+    <!-- Configuración obligatoria de Google Identity Services -->
+    <div id="g_id_onload"
+         data-client_id="620990068557-6eivd6c1itue0638pa7clrd4i5atfemj.apps.googleusercontent.com"
+         data-context="use"
+         data-ux_mode="popup"
+         data-callback="handleCredentialResponse"
+         data-auto_prompt="false">
+    </div>
+
     <div class="app-shell">
       <header style="display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap;">
         <div style="flex: 1;">
@@ -17,8 +26,10 @@
           <p>Tu asistente de idiomas con IA. Transcribe, analiza y domina cualquier video.</p>
         </div>
 
-        <!-- Contenedor de Autenticación con Google -->
-        <div id="auth-container" style="display: flex; align-items: center; gap: 1rem;">
+        <!-- Menú de Navegación Superior Derecho -->
+        <nav id="top-nav" style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; justify-content: flex-end;">
+          <button id="btn-back-home" class="ui-btn" style="display: none;">🏠 Biblioteca</button>
+          <div id="api-key-container"></div>
           <div id="google-btn-container"></div>
           
           <div id="user-profile" style="display: none; align-items: center; gap: 0.6rem; background: #FFFFFF; padding: 0.4rem 1rem; border-radius: 30px; border: 2px solid #E2E8F0; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
@@ -26,8 +37,7 @@
             <span id="user-name" style="color: #1E293B; font-size: 0.9rem; font-weight: bold;"></span>
             <button id="btn-logout" style="background: transparent; color: #F43F5E; border: none; cursor: pointer; font-size: 0.85rem; font-weight: bold; padding: 0; margin-left: 0.5rem;" title="Cerrar sesión">Salir</button>
           </div>
-        </div>
-        <button id="btn-back-home" class="ui-btn" style="display: none;">🏠 Biblioteca</button>
+        </nav>
       </header>
 
       <!-- Buscador de Videos (Página Principal) -->
