@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Viooido</title>
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/lipis/flag-icons@7.0.2/css/flag-icons.min.css"/>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧠</text></svg>">
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header style="display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap;">
+        <div style="flex: 1;">
+          <h1>Viooido</h1>
+          <p>Tu asistente de idiomas con IA. Transcribe, analiza y domina cualquier video.</p>
+        </div>
+
+        <!-- Contenedor de Autenticación con Google -->
+        <div id="auth-container" style="display: flex; align-items: center; gap: 1rem;">
+          <div id="google-btn-container"></div>
+          
+          <div id="user-profile" style="display: none; align-items: center; gap: 0.6rem; background: #FFFFFF; padding: 0.4rem 1rem; border-radius: 30px; border: 2px solid #E2E8F0; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+            <img id="user-avatar" src="" alt="Avatar" style="width: 28px; height: 28px; border-radius: 50%;" />
+            <span id="user-name" style="color: #1E293B; font-size: 0.9rem; font-weight: bold;"></span>
+            <button id="btn-logout" style="background: transparent; color: #F43F5E; border: none; cursor: pointer; font-size: 0.85rem; font-weight: bold; padding: 0; margin-left: 0.5rem;" title="Cerrar sesión">Salir</button>
+          </div>
+        </div>
+        <button id="btn-back-home" class="ui-btn" style="display: none;">🏠 Biblioteca</button>
+      </header>
+
+      <!-- Buscador de Videos (Página Principal) -->
+      <main id="home-view" style="padding: 2rem; max-width: 1200px; margin: 0 auto;">
+        <div class="search-container">
+          <input type="text" id="search-text" class="search-input flex-1" placeholder="Buscar por título o descripción..." />
+          <select id="search-category" class="search-input">
+            <option value="">Todas las categorías</option>
+          </select>
+          <select id="search-tag" class="search-input">
+            <option value="">Todos los tags</option>
+          </select>
+          <select id="search-sort" class="search-input">
+            <option value="desc" selected>Más Recientes</option>
+            <option value="asc">Más antiguos</option>
+          </select>
+          <button id="btn-new-video" class="ui-btn ui-btn-teal" style="margin-left: auto;">+ Nuevo Video</button>
+        </div>
+        <div id="video-gallery" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem;">
+          <!-- Las tarjetas de video se inyectarán aquí -->
+        </div>
+      </main>
+
+      <!-- Vista del Reproductor de Video -->
+      <main id="player-view" class="layout-grid" style="display: none;">
+        <section class="panel left-panel">
+          <div class="panel-card">
+            <h2 class="video-title">▶️ Video</h2>
+            <label for="video-url">Pegar enlace de video</label>
+            <input id="video-url" type="url" placeholder="YouTube, X, Instagram, TikTok, Facebook" />
+            
+            <div class="button-group" style="display: flex; gap: 0.8rem;">
+              <button id="load-video" class="ui-btn ui-btn-teal">Cargar video</button>
+              <button id="process-video" class="ui-btn">Procesar Video</button>
+            </div>
+
+            <div class="video-wrapper" style="border: 2px solid #E2E8F0; border-radius: 16px; overflow: hidden; background: #FFFFFF;">
+              <div id="video-container" class="video-container" tabindex="-1" style="outline: none; background: #000; min-height: 360px;">
+                <!-- El reproductor de video se inyectará aquí -->
+              </div>
+              <div id="video-info" style="display: none; padding: 0 0.5rem;">
+                <h3 id="video-title"></h3>
+                <p id="video-description"></p>
+              </div>
+              <div class="controls">
+                <button id="play-video" class="media-btn">▶ Reproducir</button>
+                <button id="pause-video" class="media-btn">⏸ Pausa</button>
+                <button id="stop-video" class="media-btn">⏹ Detener</button>
+              </div>
+            </div> <!-- /video-wrapper -->
+
+            
+          </div> <!-- /panel-card -->
+
+          <!-- NUEVO COMPONENTE DICTADO -->
+          <div class="panel-card component dictation-component" style="margin-top: 0.2rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; border-bottom: 2px solid #F1F5F9; padding-bottom: 0.75rem;">
+              <h2 style="margin: 0; border: none; padding: 0;">✍️ Dictado</h2>
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <label for="dict-complexity" style="color: #1E293B; font-weight: bold; font-size: 0.8rem;">Complejidad:</label>
+                <select id="dict-complexity" class="search-input" style="padding: 0.3rem 2rem 0.3rem 0.8rem; font-size: 0.8rem; width: auto;">
+                  <option value="25" selected>25%</option>
+                  <option value="50">50%</option>
+                  <option value="75">75%</option>
+                  <option value="100">100%</option>
+                </select>
+              </div>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem; font-size: 0.9rem; color: #64748B; font-weight: bold;">
+              <span id="dict-segment-info">Segmento 1 (0:00 - 0:00)</span>
+              <span id="dict-total-info">Total de segmentos 0 (0:00)</span>
+            </div>
+
+            <div class="dictation-controls button-group" style="margin-bottom: 1.2rem; display: flex; gap: 0.8rem; justify-content: center;">
+              <button id="dict-prev-btn" class="dict-btn">⏮ Ant.</button>
+              <button id="dict-play-btn" class="dict-btn dict-btn-primary">▶ Reproducir</button>
+              <button id="dict-next-btn" class="dict-btn">Sig. ⏭</button>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.4rem; font-size: 0.9rem; color: #334155; background: #F8FAFC; border: 2px solid #E2E8F0; padding: 0.75rem; border-radius: 12px;">
+              <span><strong>Caracteres del Segmento:</strong> ✅ <span id="dict-seg-correct" style="color:#14B8A6; font-weight:bold;">0</span> | ❌ <span id="dict-seg-incorrect" style="color:#F59E0B; font-weight:bold;">0</span></span>
+              <span><strong>Caracteres Totales:</strong> ✅ <span id="dict-glob-correct" style="color:#14B8A6; font-weight:bold;">0</span> | ❌ <span id="dict-glob-incorrect" style="color:#F59E0B; font-weight:bold;">0</span></span>
+            </div>
+
+            <div class="dictation-workspace">
+              <label id="label-dict-text-display" style="display:block; margin-bottom: 0.5rem; color: #1E293B; font-weight: bold; font-size: 0.95rem;">Verificación:</label>
+              <textarea id="dict-text-display" spellcheck="false" style="font-family: monospace; font-size: 1.1rem; letter-spacing: 0.5px; width: 100%; resize: none; min-height: 120px; max-height: 150px; overflow-y: auto; line-height: 1.5;">Esperando transcripción...</textarea>
+            </div>
+          </div> <!-- /Componente Dictado -->
+        </section> <!-- /Panel Izquierdo -->
+
+        <!-- Panel Derecho: Análisis -->
+        <section class="panel right-panel">
+          
+          <!-- Componente Oído -->
+          <div class="panel-card component ear-component">
+            <h2 style="color: #0F172A; font-weight: bold; margin-bottom: 1rem;">👂 Oído (Transcripción)</h2>
+              <div id="transcript" class="content-box output-box" style="max-height: 360px; overflow-y: auto; position: relative;">Esperando audio...</div>
+        
+          </div> <!-- /Componente Oído -->
+
+        
+
+            <div class="brain-section" style="margin-bottom: 1rem;">
+              <div id="keywords" class="analysis-section border-amber">
+                <h3>Palabras Clave</h3>
+                <p>No se generaron palabras clave.</p>
+              </div>
+            </div>
+            <div class="brain-section" style="margin-bottom: 1rem;">
+              <div id="summary" class="analysis-section border-teal">
+                <h3>Resumen (Inglés)</h3>
+                <p>No se generó resumen en inglés.</p>
+              </div>
+            </div>
+
+            <div class="brain-section" style="margin-bottom: 1rem;">
+              <div id="summary-es" class="analysis-section border-indigo">
+                <h3>Resumen (Español)</h3>
+                <p>No se generó resumen en español.</p>
+              </div>
+            </div>
+            
+            <div class="brain-section" style="margin-bottom: 1rem;">
+              <div id="analysis" class="analysis-section border-purple">
+                <h3>Verbos Frasales (Phrasal Verbs)</h3>
+                <p>Aquí aparecerán los phrasal verbs.</p>
+              </div>
+            </div>
+
+          
+        </section> <!-- /Panel Derecho -->
+
+      </main> <!-- /layout-grid -->
+
+      <footer>
+        <p>Diseño en componentes: video, oído y cerebro.</p>
+      </footer>
+    </div> <!-- /app-shell -->
+    
+    <!-- Modal del Diccionario -->
+    <div id="dictionary-modal" class="modal hidden">
+      <div class="modal-content">
+        <span id="close-modal" class="close-btn">&times;</span>
+        <div id="dict-container">
+          <h3 id="dict-word-title" style="text-align: center; margin: 0 0 1rem 0; color: #0F172A; font-size: 1.8rem; text-transform: capitalize;"></h3>
+          <div id="dict-options" class="button-group" style="justify-content: center; margin-bottom: 1.5rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <button id="btn-dict-gemini" class="ui-btn">Gemini <span class="fi fi-us"></span></button>
+            <button id="btn-dict-free" class="ui-btn ui-btn-teal">Free Dictionary <span class="fi fi-us"></span></button>
+            <button id="btn-dict-mymemory" class="ui-btn ui-btn-amber">MyMemory <span class="fi fi-es"></span></button>
+            <button id="btn-dict-lingva" class="ui-btn">Lingva <span class="fi fi-es"></span></button>
+          </div>
+          <div id="dict-results">
+            <!-- El contenido del diccionario se inyectará aquí -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
