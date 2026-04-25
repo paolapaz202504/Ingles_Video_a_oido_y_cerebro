@@ -55,8 +55,16 @@ export function setupDictionary(auth) {
           }
           
           if (det.synonyms && det.synonyms.length) html += `<p><strong style="color:#14B8A6;">Sinónimos:</strong> ${det.synonyms.join(", ")}</p>`;
-          if (det.examples && det.examples.length) {
-            html += `<div style="margin-top: 0.5rem;"><strong style="color:#6366F1;">Ejemplos:</strong><ul style="margin-top: 0.2rem; margin-bottom: 0; padding-left: 1.2rem;"><li>${det.examples.join("</li><li>")}</li></ul></div>`;
+          if (det.examples) {
+            let examplesList = [];
+            if (Array.isArray(det.examples)) {
+              examplesList = det.examples;
+            } else if (typeof det.examples === 'object') {
+              examplesList = Object.entries(det.examples).map(([k, v]) => `<strong style="text-transform: capitalize;">${k.replace('_', ' ')}:</strong> ${v}`);
+            }
+            if (examplesList.length > 0) {
+              html += `<div style="margin-top: 0.5rem;"><strong style="color:#6366F1;">Ejemplos:</strong><ul style="margin-top: 0.2rem; margin-bottom: 0; padding-left: 1.2rem;"><li>${examplesList.join("</li><li>")}</li></ul></div>`;
+            }
           }
           html += `</div>`;
         }

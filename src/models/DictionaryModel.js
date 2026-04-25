@@ -34,7 +34,7 @@ export class DictionaryModel {
             "definition": "verb definition ",
             "tenses":"present: verb in present, past: verb in past, future: verb in future, past participle: verb in past participle, gerund: verb in gerund",
             "synonyms": ["synonym 1", "synonym 2"],
-            "examples": ["[past] example in past", "[present] example in present", "[future] example in future", "[past_participle] example in past participle", "[gerund] example in gerund"]
+            "examples":{"past": "example in past", "present": "example in present", "future": "example in future", "past_participle":"example in past participle", "gerund": "example in gerund"}
           },
           "adjective": { "definition": "adjective definition", "synonyms": ["synonym 1", "synonym 2"], "examples": ["example 1", "example 2"] },
           "adverb": { "definition": "adverb definition", "synonyms": ["synonym 1", "synonym 2"], "examples": ["example 1", "example 2"] },
