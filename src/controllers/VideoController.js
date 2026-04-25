@@ -186,7 +186,7 @@ export class VideoController {
             analysis.totalTime = videoInfo.duration ? new Date(videoInfo.duration * 1000).toISOString().substr(11, 8) : (analysis.totalTime || "00:00:00");
             analysis.generatedDate = analysis.generatedDate || getGuatemalaDate();
             
-            if (videoInfo.thumbnail && !analysis.videoThumbnail) {
+            if (videoInfo.thumbnail) {
                 console.log("-> Descargando y cacheando thumbnail...");
                 analysis.videoThumbnail = await CacheManager.getAndCacheThumbnail(videoUrl, videoInfo.thumbnail);
             }
