@@ -105,11 +105,6 @@ export class VideoController {
 
             let targetDownloadUrl = videoUrl;
 
-            const cookiesPath = path.join(process.cwd(), 'cookies.txt');
-            if (fs.existsSync(cookiesPath)) {
-                ytArgs.push("--cookies", cookiesPath);
-            }
-
             if (/x\.com|twitter\.com/i.test(videoUrl)) {
                 const directMp4 = await VideoModel.getTwitterDirectUrl(videoUrl);
                 if (directMp4 && directMp4.url) targetDownloadUrl = directMp4.url;
@@ -243,7 +238,7 @@ export class VideoController {
             if (fs.existsSync(cookiesPath)) {
                 ytArgs.push("--cookies", cookiesPath);
             }
-            
+
             if (/twitter\.com/i.test(videoUrl)) {
                 ytArgs.push("--extractor-args", "twitter:api=syndication");
             }
