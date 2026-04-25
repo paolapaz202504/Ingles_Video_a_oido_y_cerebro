@@ -5,6 +5,7 @@ import { getGuatemalaDate, STANDARD_USER_AGENT } from "../utils/helpers.js";
 import { execFile } from "child_process";
 import util from "util";
 import { readFile, readdir, mkdtemp, rm, writeFile } from "fs/promises";
+import fs from "fs";
 import path from "path";
 import { tmpdir } from "os";
 import { fileURLToPath } from "url";
@@ -103,6 +104,12 @@ export class VideoController {
             }
 
             let targetDownloadUrl = videoUrl;
+
+            const cookiesPath = path.join(process.cwd(), 'cookies.txt');
+            if (fs.existsSync(cookiesPath)) {
+                ytArgs.push("--cookies", cookiesPath);
+            }
+
             if (/x\.com|twitter\.com/i.test(videoUrl)) {
                 const directMp4 = await VideoModel.getTwitterDirectUrl(videoUrl);
                 if (directMp4 && directMp4.url) targetDownloadUrl = directMp4.url;
@@ -144,6 +151,11 @@ export class VideoController {
                     "--prefer-free-formats",
                     "--user-agent", STANDARD_USER_AGENT
                 ];
+
+                const cookiesPath = path.join(process.cwd(), 'cookies.txt');
+                if (fs.existsSync(cookiesPath)) {
+                    ytArgs.push("--cookies", cookiesPath);
+                }
 
                 if (/x\.com|twitter\.com/i.test(videoUrl) && targetDownloadUrl === videoUrl) {
                     ytArgs.push("--extractor-args", "twitter:api=syndication");
@@ -226,6 +238,12 @@ export class VideoController {
 
             const formatType = "best[ext=mp4]/best";
             const ytArgs = [videoUrl, "--get-url", "-f", formatType, "--no-warnings", "--no-check-certificate", "--user-agent", STANDARD_USER_AGENT];
+            
+            const cookiesPath = path.join(process.cwd(), 'cookies.txt');
+            if (fs.existsSync(cookiesPath)) {
+                ytArgs.push("--cookies", cookiesPath);
+            }
+            
             if (/twitter\.com/i.test(videoUrl)) {
                 ytArgs.push("--extractor-args", "twitter:api=syndication");
             }
