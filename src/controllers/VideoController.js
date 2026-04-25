@@ -72,7 +72,7 @@ export class VideoController {
     }
 
     static async processVideo(req, res) {
-        let { videoUrl, apiKey } = req.body;
+        let { videoUrl, apiKey, model } = req.body;
         if (!videoUrl) {
             return res.status(400).json({ error: "La URL del video es requerida." });
         }
@@ -189,7 +189,8 @@ export class VideoController {
                 videoInfo.title || cachedAnalysis?.videoTitle || "Desconocido", 
                 videoInfo.description || cachedAnalysis?.videoDescription || "", 
                 apiKey,
-                cachedAnalysis // Le pasamos el caché que teníamos para que retome
+                cachedAnalysis, // Le pasamos el caché que teníamos para que retome
+                model
             );
             
             // 5. Poblar campos adicionales y cachear la miniatura

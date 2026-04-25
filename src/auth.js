@@ -17,12 +17,13 @@ export function setupAuth() {
       btn.id = 'btn-api-key';
       btn.textContent = '🔑 API Key';
       btn.className = 'ui-btn';
-      btn.onclick = () => {
-        showApiKeyModal();
-      };
       const container = document.getElementById('api-key-container');
       if (container) container.appendChild(btn);
     }
+    // Asignamos el evento click esté o no el botón hardcodeado en el HTML
+    btn.onclick = () => {
+      showApiKeyModal();
+    };
     return btn;
   }
 

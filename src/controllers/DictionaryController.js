@@ -31,7 +31,7 @@ export class DictionaryController {
     }
 
     static async getGeminiDictionary(req, res) {
-        const { word, apiKey } = req.body;
+        const { word, apiKey, model } = req.body;
         if (!word) return res.status(400).json({ error: "La palabra es requerida." });
         if (!apiKey) return res.status(400).json({ error: "La API Key de Gemini es requerida." });
 
@@ -39,11 +39,11 @@ export class DictionaryController {
             const cachedData = await CacheManager.getCachedDictionary('gemini', word);
             if (cachedData) return res.json(cachedData);
             
-            const data = await DictionaryModel.fetchFromGemini(word, apiKey);
+            const data = await DictionaryModel.fetchFromGemini(word, apiKey, model);
             await CacheManager.saveDictionaryToCache('gemini', word, data);
             res.json(data);
         } catch (error) {
-             res.status(500).json({ error: `Error al consultar el diccionario (gemini): ${error.message}` });
+             res.status(500).json({ error: `${error.message}` });
         }
     }
 

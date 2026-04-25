@@ -33,10 +33,11 @@ export async function setupPlayer(videoUrl, auth, ear, dictation) {
     const apiKey = auth.getApiKey();
     if (!apiKey) throw new Error("No es posible analizar el video. Falta la API Key, configúrala en el botón superior.");
 
+    const transcriptionModel = localStorage.getItem("gemini_transcription_model") || "auto";
     const response = await fetch("/api/process", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ videoUrl, apiKey })
+      body: JSON.stringify({ videoUrl, apiKey, model: transcriptionModel })
     });
 
     if (!response.ok) {

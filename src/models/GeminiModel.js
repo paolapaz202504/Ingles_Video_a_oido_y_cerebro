@@ -96,7 +96,7 @@ export class GeminiModel {
     }
   }
 
-  static async analyzeAudioMedia(base64Data, mimeType, videoUrl, videoTitle, videoDescription, apiKey, previousAnalysis = null) {
+  static async analyzeAudioMedia(base64Data, mimeType, videoUrl, videoTitle, videoDescription, apiKey, previousAnalysis = null, selectedModel = "auto") {
     if (!apiKey) throw new Error("Falta la API Key proporcionada por el usuario.");
 
     const promptPhaseA = `Tu objetivo es transcribir y procesar el audio adjunto del video: ${videoUrl || 'Desconocida'}
@@ -125,7 +125,13 @@ export class GeminiModel {
                       }
                     }`;
 
-    const models = await this.getBestTranscriptionModels(apiKey);
+    let models = [];
+    if (selectedModel && selectedModel !== "auto") {
+      models = [selectedModel];
+    } else {
+      models = await this.getBestTranscriptionModels(apiKey);
+    }
+
     let lastError = null;
     let parsedDataA = null;
     let activeModelA = null;
@@ -249,6 +255,7 @@ export class GeminiModel {
                             su fluidez en el idioma.
             
                             PASO 5: Formato de salida
+                            PREVENCIÓN DE CORRUPCIÓN JSON (CRÍTICO): Tienes estrictamente prohibido usar comillas dobles (") o saltos de línea (\n) dentro del campo "text". Si necesitas citar a alguien, usa ÚNICAMENTE comillas simples ('). Tu respuesta será procesada por una máquina; si el JSON es inválido, el sistema colapsará.
                             Devuelve estrictamente un objeto JSON con la siguiente estructura exacta:\n
                             {
                               "videoTitleGenerated": "Generated title based on audio content",

@@ -20,7 +20,7 @@ export class DictionaryModel {
     return await response.json();
   }
 
-  static async fetchFromGemini(word, apiKey) {
+  static async fetchFromGemini(word, apiKey, selectedModel = "auto") {
     if (!apiKey) throw new Error("Falta la API Key proporcionada por el usuario.");
     const prompt = `Actúa como un diccionario avanzado de Inglés. Analiza la palabra en inglés: "${word}".
       Devuelve estrictamente un objeto JSON con esta estructura en idioma inglés:
@@ -45,7 +45,12 @@ export class DictionaryModel {
         }
       }`;
 
-    const models = await GeminiModel.getBestDictionaryModels(apiKey);
+    let models = [];
+    if (selectedModel && selectedModel !== "auto") {
+      models = [selectedModel];
+    } else {
+      models = await GeminiModel.getBestDictionaryModels(apiKey);
+    }
 
     for (const model of models) {
       try {
@@ -67,6 +72,6 @@ export class DictionaryModel {
       } catch (err) {
         console.warn(`Diccionario: Fallo con el modelo ${model}. Error: ${err.message}`);
       }
-    } throw new Error("Todos los modelos de Gemini fallaron al intentar consultar el diccionario.");
+    } throw new Error(`Utilice otra configuración para obtener el diccionario de la palabra ${word}`);
   }
 }
