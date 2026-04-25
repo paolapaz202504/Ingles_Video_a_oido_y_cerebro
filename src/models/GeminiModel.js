@@ -1,60 +1,99 @@
 import fetch from "node-fetch";
 
-let validGeminiModels = [];
-
-let bestGeminiModel = [
-  // la versión más avanzada y de mayor calidad, ideal para análisis profundos y generación de contenido detallado, 
-  // aunque puede ser más lenta y consumir más recursos.
-  "gemini-3.1-pro-preview", 
-  "gemini-3-pro-preview", 
-  "gemini-3.1-pro-preview-customtools", 
-  "gemini-2.5-pro", 
-  "gemini-pro-latest",
-  //baja latencia y alta velocidad, ideal para pruebas rápidas y respuestas inmediatas, 
-  //calidad de generación ligeramente inferior a los modelos "pro". 
-  "gemini-3-flash-preview", 
-  "gemini-3.1-flash-lite-preview",
-  "gemini-2.5-flash",
-  "gemini-flash-latest",
-];
 
 export class GeminiModel {
-  static async getValidModels(apiKey) {
-    if (validGeminiModels.length > 0) return validGeminiModels;
-
-    if (!apiKey) throw new Error("Falta la API Key proporcionada por el usuario.");
+  
+  static async getBestDictionaryModels(apiKey) {
     try {
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
-      const data = await response.json();
-      
-      if (data.models) {
-          validGeminiModels = data.models
-          .filter(m => m.supportedGenerationMethods.includes("generateContent"))
-          .map(m => m.name.replace("models/", ""));
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+        const data = await response.json();
 
-        validGeminiModels.sort((a, b) => {
-          const indexA = bestGeminiModel.indexOf(a);
-          const indexB = bestGeminiModel.indexOf(b);
-          
-          if (indexA !== -1 && indexB !== -1) return indexA - indexB;
-          if (indexA !== -1) return -1;
-          if (indexB !== -1) return 1;
+        if (!data.models) throw new Error("Error al recuperar modelos.");
 
-          if (a.includes("flash") && !b.includes("flash")) return -1;
-          if (!a.includes("flash") && b.includes("flash")) return 1;
-          return 0;
+        return data.models
+            .filter(m => m.supportedGenerationMethods.includes('generateContent'))
+            .map(m => {
+                let score = 0;
+                const name = m.name.toLowerCase();
+
+                // 1. Prioridad por Familia (Lite es el rey de la velocidad)
+                if (name.includes('flash-lite')) score += 1000;
+                else if (name.includes('flash')) score += 500;
+                else if (name.includes('pro')) score -= 500; // Demasiado lento para un diccionario
+
+                // 2. Prioridad por Generación (3.1 > 3.0 > 2.5)
+                if (name.includes('3.1')) score += 300;
+                else if (name.includes('3')) score += 200;
+                else if (name.includes('2.5')) score += 100;
+
+                // 3. Bonus por ser Preview (Últimos refinamientos de IA)
+                if (name.includes('preview')) score += 50;
+
+                // 4. Penalización por modelos obsoletos (Deprecated)
+                if (name.includes('001') || name.includes('002')) score -= 200;
+
+                return { modelId: m.name.replace('models/', ''), score };
+            })
+            .sort((a, b) => b.score - a.score) // Orden descendente
+            .map(m => m.modelId); // Devolvemos solo los IDs ordenados
+
+    } catch (error) {
+        console.error("Error técnico al clasificar modelos:", error);
+        // Fallback manual en caso de error de red
+        return ["gemini-3.1-flash-lite-preview", "gemini-2.5-flash-lite", "gemini-3-flash-preview"];
+    }
+  }
+
+/**
+ * Clasifica los modelos según su capacidad de transcripción profesional.
+ * Criterio: Prioriza Ventana de Contexto, arquitectura 'Pro' y versiones 3.x.
+ */
+  static async getBestTranscriptionModels(apiKey) {
+    try {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+        const data = await response.json();
+
+        if (!data.models) throw new Error("No se pudo obtener la lista de modelos de Google.");
+
+        const scoredModels = data.models
+            .filter(m => m.supportedGenerationMethods.includes('generateContent'))
+            .map(m => {
+                let score = 0;
+                const name = m.name.toLowerCase();
+                const context = m.inputTokenLimit;
+
+                // 1. EL REY ES EL CONTEXTO (Capacidad de "escuchar" videos largos)
+                if (context >= 2000000) score += 2000;
+                else if (context >= 1000000) score += 1000;
+                else if (context >= 128000) score += 200;
+
+                // 2. INTELIGENCIA BRUTA (Pro > Flash)
+                if (name.includes('pro')) score += 1000;
+                else if (name.includes('flash')) score += 300;
+
+                // 3. GENERACIÓN TECNOLÓGICA (3.1 > 3.0 > 2.5)
+                if (name.includes('3.1')) score += 500;
+                else if (name.includes('3')) score += 300;
+                else if (name.includes('2.5')) score += 100;
+
+                // 4. MULTIMODALIDAD (Priorizar modelos optimizados para audio/video)
+                if (!name.includes('image') && !name.includes('vision')) score += 100;
+                return { modelId: m.name.replace('models/', ''), score };
+            })
+            .sort((a, b) => b.score - a.score); // Ordenar por el mejor puntaje
+
+        // Mostrar en consola los modelos y sus puntajes antes de desechar los scores
+        scoredModels.forEach((m, index) => {
+            console.log(`${index + 1}. Modelo: ${m.modelId} | Score: ${m.score}`);
         });
 
-        console.log("\n=== Modelos disponibles en tu cuenta ===");
-        validGeminiModels.forEach(m => console.log(`- ${m}`));
-        console.log("========================================\n");
+        return scoredModels.map(m => m.modelId);
 
-        return validGeminiModels;
-      }
     } catch (error) {
-      console.error("Error al consultar la lista de modelos:", error);
+        console.error("Error en la clasificación de modelos de transcripción:", error);
+        // Fallback profesional en caso de fallo de API
+        return ["gemini-3.1-pro-preview", "gemini-3-pro-preview", "gemini-2.5-pro", "gemini-3-flash-preview"];
     }
-    return ["gemini-1.5-flash", "gemini-pro"];
   }
 
   static async analyzeAudioMedia(base64Data, mimeType, videoUrl, videoTitle, videoDescription, apiKey, previousAnalysis = null) {
@@ -72,20 +111,21 @@ export class GeminiModel {
                     3. FORMATO DE TIEMPO ESTRICTO: Utiliza estrictamente el formato "MM:SS.ms" (ej. "02:11.5") para "start" y "end". Usar este formato tipo reloj es OBLIGATORIO para evitar desfases.
                     4. CORTE NATURAL: Corta los segmentos ÚNICAMENTE cuando haya una pausa natural en la respiración, un punto, una coma o un cambio de hablante. Cada segmento debe durar entre 2 y 6 segundos.
                     5. FIDELIDAD ESTRICTA: Escribe ÚNICAMENTE las palabras que suenan dentro de ese lapso de tiempo.
+                    6. PREVENCIÓN DE CORRUPCIÓN JSON (CRÍTICO): Tienes estrictamente prohibido usar comillas dobles (") o saltos de línea (\n) dentro del campo "text". Si necesitas citar a alguien, usa ÚNICAMENTE comillas simples ('). Tu respuesta será procesada por una máquina; si el JSON es inválido, el sistema colapsará.
 
                     PASO 2: Formato de salida
-                    Devuelve estrictamente un objeto JSON con la siguiente estructura exacta:
+                    Devuelve estrictamente un objeto JSON con la siguiente estructura exacta (observa el uso de comillas simples en el ejemplo del texto):
                     {
                       "videoUrl": "",  
                       "transcription": {
                         "segments": [
-                          { "speaker": "Speaker 1", "start": "00:00.0", "end": "00:04.5", "text": "texto del primer segmento..." },
-                          { "speaker": "Speaker 2", "start": "00:04.5", "end": "00:09.0", "text": "texto del segundo segmento..." }
+                          { "speaker": "Speaker 1", "start": "00:00.0", "end": "00:04.5", "text": "and then he said 'hello' to me" },
+                          { "speaker": "Speaker 2", "start": "00:04.5", "end": "00:09.0", "text": "that is so crazy" }
                         ]
                       }
                     }`;
 
-    const models = await this.getValidModels(apiKey);
+    const models = await this.getBestTranscriptionModels(apiKey);
     let lastError = null;
     let parsedDataA = null;
     let activeModelA = null;

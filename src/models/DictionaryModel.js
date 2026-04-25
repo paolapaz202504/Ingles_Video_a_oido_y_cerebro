@@ -34,7 +34,7 @@ export class DictionaryModel {
             "definition": "verb definition ",
             "tenses":"present: verb in present, past: verb in past, future: verb in future, past participle: verb in past participle, gerund: verb in gerund",
             "synonyms": ["synonym 1", "synonym 2"],
-            "examples": { "past": "example in past", "present": "example in present", "future": "example in future", "past_participle": "example in past participle", "gerund": "example in gerund" }
+            "examples": ["[past] example in past", "[present] example in present", "[future] example in future", "[past_participle] example in past participle", "[gerund] example in gerund"]
           },
           "adjective": { "definition": "adjective definition", "synonyms": ["synonym 1", "synonym 2"], "examples": ["example 1", "example 2"] },
           "adverb": { "definition": "adverb definition", "synonyms": ["synonym 1", "synonym 2"], "examples": ["example 1", "example 2"] },
@@ -45,7 +45,7 @@ export class DictionaryModel {
         }
       }`;
 
-    const models = await GeminiModel.getValidModels(apiKey);
+    const models = await GeminiModel.getBestDictionaryModels(apiKey);
 
     for (const model of models) {
       try {
@@ -59,6 +59,7 @@ export class DictionaryModel {
           const data = await response.json();
           let text = data?.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
           text = text.replace(/```json/gi, "").replace(/```/g, "").trim();
+          console.info(`Diccionario: Funcionó con el modelo ${model}. Palabra: ${word}`);
           return JSON.parse(text);
         } else {
           console.warn(`Diccionario: El modelo ${model} falló (${response.status}).`);
