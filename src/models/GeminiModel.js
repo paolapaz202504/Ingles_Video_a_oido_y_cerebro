@@ -62,11 +62,7 @@ export class GeminiModel {
 
     const promptPhaseA = `Tu objetivo es transcribir y procesar el audio adjunto del video: ${videoUrl || 'Desconocida'}
   
-                    PASO 1: Metadatos Básicos
-                    Analiza el título: "${videoTitle || 'No disponible'}" y descripción: "${videoDescription || 'No disponible'}".
-                    Genera un título descriptivo ("videoTitleGenerated") y una descripción breve ("videoDescriptionGenerated") basados en el audio.
-                    
-                    PASO 2: Transcripción Exhaustiva y Sincronización (NIVEL PROFESIONAL)
+                    PASO 1: Transcripción Exhaustiva y Sincronización (NIVEL PROFESIONAL)
                     Actúa como un experto en subtitulaje (Closed Captioning) y transcripción verbatim. 
                     Transcribe el audio EN SU TOTALIDAD. No omitas ni una sola palabra, muletilla o pausa.
                     
@@ -77,14 +73,11 @@ export class GeminiModel {
                     4. CORTE NATURAL: Corta los segmentos ÚNICAMENTE cuando haya una pausa natural en la respiración, un punto, una coma o un cambio de hablante. Cada segmento debe durar entre 2 y 6 segundos.
                     5. FIDELIDAD ESTRICTA: Escribe ÚNICAMENTE las palabras que suenan dentro de ese lapso de tiempo.
 
-                    PASO 3: Formato de salida
+                    PASO 2: Formato de salida
                     Devuelve estrictamente un objeto JSON con la siguiente estructura exacta:
                     {
-                      "videoTitleGenerated": "Generated title based on audio content",
-                      "videoDescriptionGenerated": "Generated description based on audio content",
-                      "totalTime": "Total time in format MM:SS",
+                      "videoUrl": "",  
                       "transcription": {
-                        "segmentsCount": 0,
                         "segments": [
                           { "speaker": "Speaker 1", "start": "00:00.0", "end": "00:04.5", "text": "texto del primer segmento..." },
                           { "speaker": "Speaker 2", "start": "00:04.5", "end": "00:09.0", "text": "texto del segundo segmento..." }
@@ -175,13 +168,17 @@ export class GeminiModel {
       const promptPhaseB = `Actúa como un lingüista especializado en dialectos urbanos y lenguaje informal. 
                             Basándote estrictamente en la siguiente transcripción en formato JSON extraída del video:\n\n
                             ${JSON.stringify(parsedDataA.transcription)}\n\n
-                        
-                            PASO 1: Resumen y Palabras Clave
+                     
+                            PASO 1: Metadatos Básicos
+                            Analiza el título: "${videoTitle || 'No disponible'}" y descripción: "${videoDescription || 'No disponible'}".
+                            Genera un título descriptivo ("videoTitleGenerated") y una descripción breve ("videoDescriptionGenerated") basados en el audio.
+
+                            PASO 2: Resumen y Palabras Clave
                             a) Extrae palabras clave relevantes en inglés con su traducción ("keywords").
                             b) Crea un resumen del video en inglés ("summary") de máximo 40 palabras.
                             c) Crea un resumen del video en español ("summary_es") de máximo 40 palabras.
                 
-                            PASO 2: Análisis Lingüístico Exhaustivo
+                            PASO 3: Análisis Lingüístico Exhaustivo
                             Identifica y extrae TODOS los elementos del lenguaje coloquial, sin omitir ninguno por ser común:
                             a) Phrasal Verbs: Incluye verbos de movimiento y estado (ej. 'pull up', 'have over', 'go on').
                             b) Marcadores de Reporte: Captura expresiones como 'I'm like' / 'He's like' explicando que se usan para introducir una cita o pensamiento (traducción: 'Yo estaba como...' / 'Yo le dije...').
@@ -194,7 +191,7 @@ export class GeminiModel {
                               y los Marcadores de Reporte, Expresiones de Intensidad y Slang y Relleno deben guardarse en la sección "colloquial_expressions". 
                               No mezcles ambos tipos de elementos.  
                           
-                            PASO 3: Verbos.
+                            PASO 4: Verbos.
                             a) Es importante que extraigas como máximo los 6 verbos principales del audio, no solo los que forman parte de los phrasal verbs. 
                             Para cada verbo, debes proporcionar su conjugación en presente, pasado, futuro, gerundio, su significado general y ejemplos de uso en diferentes tiempos verbales. 
                             Esto ayudará a los usuarios a entender mejor el contexto y el uso de cada verbo dentro de la anécdota.  
@@ -211,14 +208,15 @@ export class GeminiModel {
                             Esto ayudará a los usuarios a comprender mejor cómo se utilizan los verbos en situaciones cotidianas y a mejorar
                             su fluidez en el idioma.
             
-                            PASO 4: Formato de salida
+                            PASO 5: Formato de salida
                             Devuelve estrictamente un objeto JSON con la siguiente estructura exacta:\n
                             {
+                              "videoTitleGenerated": "Generated title based on audio content",
+                              "videoDescriptionGenerated": "Generated description based on audio content",
+                              "totalTime": "Total time in format MM:SS",
                               "videoTitle":"",
                               "videoDescription":"",
-                              "videoThumbnail": "video thumbnail url", 
                               "generatedDate":"datetime in format dd/mm/yyyy mm:ss",
-                              "videoUrl": "",  
                               "category": "Genera una categoría principal (ej. Tecnología, Comedia)",
                               "tags": ["tag1", "tag2", "tag3"],
                               "keywords": "keyword in english (translate keyword in spanish)",
