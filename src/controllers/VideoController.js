@@ -71,6 +71,26 @@ export class VideoController {
         return normalized.replace(/\/$/, "");
     }
 
+    // Helper centralizado para orquestar la extracción mediante múltiples redes Proxy (Alta Disponibilidad)
+    static async _getProxyStream(videoUrl, isAudioOnly) {
+        const videoIdMatch = videoUrl.match(/(?:v=|youtu\.be\/)([\w-]+)/);
+        const videoId = videoIdMatch ? videoIdMatch[1] : null;
+        if (!videoId) return null;
+
+        // ESTADO DE LA RED: Las APIs gratuitas/proxies fallan constantemente en centros de datos.
+        // Espacio reservado para implementar una API de pago (ej. RapidAPI) o dejar fluir a yt-dlp local.
+        /* EJEMPLO DE IMPLEMENTACIÓN DE RAPID API:
+           const apiKey = process.env.RAPID_API_KEY;
+           const res = await fetch(`https://youtube-video-download-api.p.rapidapi.com/dl?url=${videoUrl}`, {
+               headers: { 'X-RapidAPI-Key': apiKey }
+           });
+           const data = await res.json();
+           return { url: data.link, thumbnail: data.thumb, title: data.title };
+        */
+        
+        return null; // Forzamos a que el sistema use el bloque nativo de yt-dlp
+    }
+
     static async processVideo(req, res) {
         let { videoUrl, apiKey, model } = req.body;
         if (!videoUrl) {
@@ -114,61 +134,31 @@ export class VideoController {
             }
 
             let isYouTube = /youtu\.be|youtube\.com/i.test(videoUrl);
-            let pipedAudioUrl = null;
+            let proxyAudioUrl = null;
             let videoInfo = {};
 
             if (isYouTube) {
-                console.log("-> YouTube detectado. Usando Piped API para evadir bloqueo de IP en Render...");
-                const videoIdMatch = videoUrl.match(/(?:v=|youtu\.be\/)([\w-]+)/);
-                const videoId = videoIdMatch ? videoIdMatch[1] : null;
-                
-                if (videoId) {
-                    const instances = [
-                        "https://pipedapi.kavin.rocks",
-                        "https://pipedapi.syncpundit.io",
-                        "https://pipedapi.lunar.icu",
-                        "https://pipedapi.smnz.de",
-                        "https://de.piped.api.adminforge.de",
-                        "https://pipedapi.tokhmi.xyz",
-                        "https://pipedapi.drgns.space"
-                    ];
-                    for (const instance of instances) {
-                        try {
-                            const res = await fetch(`${instance}/streams?videoId=${videoId}`);
-                            if (res.ok) {
-                                const data = await res.json();
-                                videoInfo = {
-                                    title: data.title,
-                                    description: data.description,
-                                    duration: data.duration,
-                                    thumbnail: data.thumbnailUrl,
-                                    extractor_key: "youtube"
-                                };
-                                
-                                const audio = data.audioStreams.find(a => a.mimeType.includes("mp4")) || data.audioStreams[0];
-                                if (audio && audio.url) {
-                                    pipedAudioUrl = audio.url;
-                                    targetDownloadUrl = audio.url;
-                                    break;
-                                }
-                            }
-                        } catch (e) {
-                            console.warn(`-> Piped API falló en ${instance}`);
-                        }
-                    }
+                const proxyData = await VideoController._getProxyStream(videoUrl, true);
+                if (proxyData) {
+                    proxyAudioUrl = proxyData.url;
+                    targetDownloadUrl = proxyData.url;
+                    videoInfo = {
+                        title: proxyData.title,
+                        description: "",
+                        duration: proxyData.duration,
+                        thumbnail: proxyData.thumbnail,
+                        extractor_key: proxyData.extractor
+                    };
                 }
             }
 
-            if (!pipedAudioUrl) {
-                if (isYouTube && process.env.RENDER) {
-                    console.warn("-> [Render] Piped API falló. No se puede usar yt-dlp por bloqueo de IP. Abortando análisis.");
-                    return res.status(503).json({ error: "Los servidores proxy están temporalmente saturados y YouTube bloquea la IP de Render. Intenta analizar el video en unos minutos." });
-                }
-                
+            if (!proxyAudioUrl) {
                 // 2. Intentar obtener información (si falla, descargaremos a ciegas)
-                console.log("-> Obteniendo información del video con yt-dlp...");
+                console.log("-> Obteniendo información del video con yt-dlp nativo...");
                 try {
-                    const dumpArgs = ["--dump-json", "--no-warnings", "--no-check-certificate", "--no-cache-dir", "--js-runtimes", "node", "--extractor-args", "youtube:player_client=mweb"];
+                    // Removidos los extractores forzados que rompían la descarga de audio.
+                    // Confiamos en el comportamiento nativo de yt-dlp.
+                    const dumpArgs = ["--dump-json", "--no-warnings", "--no-check-certificate", "--no-cache-dir"];
                     const cookiesPath = path.join(process.cwd(), 'cookies.txt');
                     if (fs.existsSync(cookiesPath)) {
                         dumpArgs.push("--cookies", cookiesPath);
@@ -195,10 +185,10 @@ export class VideoController {
                 // 2.1 Crear directorio temporal y descargar con los comandos exactos de server_copia
                 tempDir = await mkdtemp(path.join(tmpdir(), "video-audio-"));
                 
-                if (pipedAudioUrl && isYouTube) {
-                    console.log(`-> Descargando audio directo desde proxy Piped API...`);
+                if (proxyAudioUrl && isYouTube) {
+                    console.log(`-> Descargando audio directo desde proxy API...`);
                     try {
-                        const audioRes = await fetch(pipedAudioUrl);
+                        const audioRes = await fetch(proxyAudioUrl);
                         if (!audioRes.ok) throw new Error(`HTTP ${audioRes.status}`);
                         const buffer = await audioRes.arrayBuffer();
                         const audioPath = path.join(tempDir, "audio.m4a");
@@ -208,12 +198,12 @@ export class VideoController {
                         mimeType = 'audio/mp4';
                         console.log(`-> Audio descargado exitosamente (${(buffer.byteLength / 1024 / 1024).toFixed(2)} MB)`);
                     } catch (err) {
-                        console.warn("-> Error descargando desde Piped, recayendo en yt-dlp...", err.message);
-                        pipedAudioUrl = null; // Falla forzada para caer en yt-dlp
+                        console.warn("-> Error descargando desde Proxy, recayendo en yt-dlp...", err.message);
+                        proxyAudioUrl = null; // Falla forzada para caer en yt-dlp
                     }
                 }
 
-                if (!pipedAudioUrl) {
+                if (!proxyAudioUrl) {
                     const ytArgs = [
                         targetDownloadUrl,
                         "--format", "bestaudio/best",
@@ -222,9 +212,7 @@ export class VideoController {
                         "--no-check-certificate",
                         "--no-playlist",
                         "--prefer-free-formats",
-                        "--no-cache-dir",
-                        "--js-runtimes", "node",
-                        "--extractor-args", "youtube:player_client=mweb"
+                        "--no-cache-dir"
                     ];
 
                     const cookiesPath = path.join(process.cwd(), 'cookies.txt');
@@ -314,44 +302,16 @@ export class VideoController {
             }
 
             if (/youtube\.com|youtu\.be/i.test(videoUrl)) {
-                console.log("-> Obteniendo URL directa vía Piped API (Bypass Datacenter Block)...");
-                const videoIdMatch = videoUrl.match(/(?:v=|youtu\.be\/)([\w-]+)/);
-                const videoId = videoIdMatch ? videoIdMatch[1] : null;
-                
-                if (videoId) {
-                    const instances = [
-                        "https://pipedapi.kavin.rocks",
-                        "https://pipedapi.syncpundit.io",
-                        "https://pipedapi.lunar.icu",
-                        "https://pipedapi.smnz.de",
-                        "https://de.piped.api.adminforge.de",
-                        "https://pipedapi.tokhmi.xyz",
-                        "https://pipedapi.drgns.space"
-                    ];
-                    for (const instance of instances) {
-                        try {
-                            const resFetch = await fetch(`${instance}/streams?videoId=${videoId}`);
-                            if (resFetch.ok) {
-                                const data = await resFetch.json();
-                                const video = data.videoStreams.find(v => v.videoOnly === false && v.mimeType.includes("mp4"));
-                                if (video && video.url) {
-                                    return res.json({ directUrl: video.url, thumbnail: data.thumbnailUrl });
-                                }
-                            }
-                        } catch (e) {}
-                    }
-                }
-                
-                console.warn("-> Todas las instancias de Piped fallaron.");
-                if (process.env.RENDER) {
-                    console.warn("-> [Render] Bloqueo de IP detectado. Evitando yt-dlp y forzando IFrame en frontend.");
-                    return res.status(500).json({ error: "Piped falló y yt-dlp está bloqueado en Render. Forzando IFrame." });
+                const proxyData = await VideoController._getProxyStream(videoUrl, false);
+                if (proxyData && proxyData.url) {
+                    return res.json({ directUrl: proxyData.url, thumbnail: proxyData.thumbnail });
                 }
                 console.warn("-> Recayendo en yt-dlp local...");
             }
 
-            const formatType = "b[ext=mp4]/b";
-            const ytArgs = [videoUrl, "--get-url", "-f", formatType, "--no-warnings", "--no-check-certificate", "--no-cache-dir", "--js-runtimes", "node", "--extractor-args", "youtube:player_client=mweb"];
+            // Uso de formato mixto "b" y eliminación de cliente forzado para estabilizar entorno local
+            const formatType = "b";
+            const ytArgs = [videoUrl, "--get-url", "-f", formatType, "--no-warnings", "--no-check-certificate", "--no-cache-dir"];
             
             const cookiesPath = path.join(process.cwd(), 'cookies.txt');
             if (fs.existsSync(cookiesPath)) {
