@@ -381,4 +381,33 @@ export class VideoController {
             res.status(500).send("Error en el proxy de video");
         }
     }
+
+    static async updateSegments(req, res) {
+        const { videoUrl, segments } = req.body;
+        if (!videoUrl || !segments) {
+            return res.status(400).json({ error: "Faltan datos requeridos (videoUrl o segments)." });
+        }
+        
+        try {
+            const normalizedUrl = VideoController._normalizeUrl(videoUrl);
+            const cachedAnalysis = await CacheManager.getCachedAnalysis(normalizedUrl);
+            
+            if (!cachedAnalysis) {
+                return res.status(404).json({ error: "No se encontró el análisis en la caché." });
+            }
+            
+            // Actualizamos solo los segmentos, sin tocar el resto de la metadata y resúmenes
+            if (cachedAnalysis.transcription) {
+                cachedAnalysis.transcription.segments = segments;
+            } else {
+                cachedAnalysis.transcription = { segments };
+            }
+            
+            await CacheManager.saveAnalysisToCache(normalizedUrl, cachedAnalysis.prompt || "", cachedAnalysis);
+            res.json({ success: true, message: "Segmentos actualizados correctamente." });
+        } catch (error) {
+            console.error("Error al actualizar segmentos:", error);
+            res.status(500).json({ error: "Error interno al guardar los cambios." });
+        }
+    }
 }

@@ -48,6 +48,8 @@ export async function setupPlayer(videoUrl, auth, ear, dictation) {
     }
 
     const { analysis } = await response.json();
+    const analysisCreatedBy = analysis.createdBy || "Desconocido";
+    const currentEmail = currentUser ? currentUser.email : "";
 
     if (analysis.transcription) {
       if (Array.isArray(analysis.transcription.segments)) {
@@ -63,7 +65,7 @@ export async function setupPlayer(videoUrl, auth, ear, dictation) {
       }
       const tData = { text: analysis.transcription.Transcription_text, segments: analysis.transcription.segments };
       ear.showTranscript(tData);
-      if (dictation && tData.segments) dictation.loadSegments(tData.segments);
+      if (dictation && tData.segments) dictation.loadSegments(tData.segments, videoUrl, analysisCreatedBy, currentEmail);
     } else {
       ear.showTranscript("No se pudo generar la transcripción corregida.");
     }

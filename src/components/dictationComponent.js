@@ -33,6 +33,9 @@ export function setupDictationComponent(videoPanel) {
   let sessionStats = [];
   let segmentPlayCount = 0;
   let dictationStartTime = null;
+  let currentVideoUrl = "";
+  let currentCreatedBy = "";
+  let currentUserEmail = "";
 
   // Inyectar control de velocidad dinámicamente junto a la complejidad
   if (complexitySelect && complexitySelect.parentNode && !document.getElementById("dict-speed-container")) {
@@ -231,10 +234,11 @@ export function setupDictationComponent(videoPanel) {
   }
 
   function formatTime(seconds) {
-    if (seconds === undefined) return "0:00";
+    if (seconds === undefined) return "0:00.0";
     const m = Math.floor(seconds / 60);
     const s = Math.floor(seconds % 60);
-    return `${m}:${s.toString().padStart(2, '0')}`;
+    const ms = Math.floor((seconds % 1) * 10);
+    return `${m}:${s.toString().padStart(2, '0')}.${ms}`;
   }
 
   function updateCounters() {
@@ -609,11 +613,100 @@ export function setupDictationComponent(videoPanel) {
   });
 
   return {
-    loadSegments: (newSegments) => {
+    loadSegments: (newSegments, videoUrl, createdBy, userEmail) => {
       if (!newSegments || newSegments.length === 0) return;
       segments = newSegments; currentIndex = 0; globCorrect = 0; globIncorrect = 0; sessionStats = []; wordErrors = {};
+      currentVideoUrl = videoUrl;
+      currentCreatedBy = createdBy || "Desconocido";
+      currentUserEmail = userEmail || "";
       dictationStartTime = Date.now();
       totalInfo.textContent = `Total de segmentos ${segments.length} (${formatTime(segments[segments.length - 1].end || 0)})`;
+      
+      console.log(`[Calibración] Usuario Actual: '${currentUserEmail}' | Creador: '${currentCreatedBy}'`);
+
+      // Configurar controles de calibración
+      let calContainer = document.getElementById("dict-calibration-controls");
+      
+      // Permitir calibrar si es el creador exacto o si el video es antiguo (Desconocido)
+      const isAuthorized = currentUserEmail && (currentUserEmail === currentCreatedBy || currentCreatedBy === "Desconocido");
+
+      if (isAuthorized) {
+        if (!calContainer) {
+          calContainer = document.createElement("div");
+          calContainer.id = "dict-calibration-controls";
+          calContainer.style.cssText = "display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap; background: #F8FAFC; padding: 10px; border-radius: 8px; border: 2px dashed #94A3B8;";
+          calContainer.innerHTML = `
+            <span style="font-size: 0.85rem; font-weight: bold; color: #334155; margin-right: auto;">⏱️ Calibrar Tiempo:</span>
+            <div style="display: flex; gap: 4px;">
+              <button id="cal-start-minus" class="ui-btn" style="padding: 4px 8px; font-size: 0.75rem; background: #E2E8F0; color: #1E293B; box-shadow: 0 2px 0 #CBD5E1;" title="Reducir inicio">- Ini</button>
+              <button id="cal-start-plus" class="ui-btn" style="padding: 4px 8px; font-size: 0.75rem; background: #E2E8F0; color: #1E293B; box-shadow: 0 2px 0 #CBD5E1;" title="Incrementar inicio">+ Ini</button>
+            </div>
+            <div style="display: flex; gap: 4px; margin-left: 8px;">
+              <button id="cal-end-minus" class="ui-btn" style="padding: 4px 8px; font-size: 0.75rem; background: #E2E8F0; color: #1E293B; box-shadow: 0 2px 0 #CBD5E1;" title="Reducir fin">- Fin</button>
+              <button id="cal-end-plus" class="ui-btn" style="padding: 4px 8px; font-size: 0.75rem; background: #E2E8F0; color: #1E293B; box-shadow: 0 2px 0 #CBD5E1;" title="Incrementar fin">+ Fin</button>
+            </div>
+            <button id="cal-save" class="ui-btn ui-btn-amber" style="padding: 6px 14px; font-size: 0.8rem; margin-left: 8px;">Guardar Cambios</button>
+          `;
+          
+          // Lo insertamos de forma más robusta y visible justo encima de la caja de texto del dictado
+          textDisplay.parentNode.insertBefore(calContainer, textDisplay);
+
+          const step = 0.2;
+          const adjustTime = (type, amount) => {
+            if (!segments || segments.length === 0) return;
+            const seg = segments[currentIndex];
+            if (type === 'start') {
+              let newStart = seg.start + amount;
+              if (newStart < 0) newStart = 0;
+              if (newStart >= seg.end) newStart = seg.end - 0.1;
+              seg.start = newStart;
+              if (currentIndex > 0) segments[currentIndex - 1].end = newStart;
+            } else if (type === 'end') {
+              let newEnd = seg.end + amount;
+              if (newEnd <= seg.start) newEnd = seg.start + 0.1;
+              const vid = videoPanel.getVideoElement();
+              if (vid && newEnd > vid.duration) newEnd = vid.duration;
+              seg.end = newEnd;
+              if (currentIndex < segments.length - 1) segments[currentIndex + 1].start = newEnd;
+            }
+            segInfo.textContent = `Segmento ${currentIndex + 1} (${formatTime(seg.start)} - ${formatTime(seg.end)})`;
+            totalInfo.textContent = `Total de segmentos ${segments.length} (${formatTime(segments[segments.length - 1].end || 0)})`;
+            videoPanel.playSegment(seg.start, seg.end);
+          };
+
+          document.getElementById("cal-start-minus").addEventListener("click", () => adjustTime('start', -step));
+          document.getElementById("cal-start-plus").addEventListener("click", () => adjustTime('start', step));
+          document.getElementById("cal-end-minus").addEventListener("click", () => adjustTime('end', -step));
+          document.getElementById("cal-end-plus").addEventListener("click", () => adjustTime('end', step));
+          
+          document.getElementById("cal-save").addEventListener("click", async () => {
+            const btn = document.getElementById("cal-save");
+            btn.textContent = "Guardando...";
+            btn.disabled = true;
+            try {
+              const response = await fetch("/api/update-segments", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ videoUrl: currentVideoUrl, segments: segments })
+              });
+              if (!response.ok) throw new Error("Error al guardar la calibración");
+              btn.textContent = "¡Guardado!";
+              btn.style.background = "#10B981"; // Verde éxito
+              btn.style.color = "#FFFFFF";
+              setTimeout(() => { btn.textContent = "Guardar Cambios"; btn.style.background = ""; btn.style.color = ""; btn.disabled = false; }, 2000);
+            } catch (error) {
+              console.error(error);
+              alert("Error al guardar los segmentos");
+              btn.textContent = "Guardar Cambios";
+              btn.disabled = false;
+            }
+          });
+        }
+        calContainer.style.display = "flex";
+      } else {
+        if (calContainer) calContainer.style.display = "none";
+      }
+
       renderSegment();
     }
   };
