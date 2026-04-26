@@ -52,12 +52,16 @@ export function setupGallery(onPlayVideo) {
           ${v.thumbnail ? `<img src="${v.thumbnail}" style="width: 100%; height: 100%; object-fit: cover;" />` : `<div style="padding:2rem; text-align:center; color:#888; height:100%; display:flex; align-items:center; justify-content:center;">Sin portada</div>`}
           <div style="position: absolute; bottom: 8px; right: 8px; background: rgba(0,0,0,0.8); color: white; padding: 4px 8px; border-radius: 8px; font-size: 0.8rem; font-weight: bold;">${v.totalTime ? v.totalTime.replace(/^0h\s*/, '') : '00:00'}</div>
         </div>
-        <div style="padding: 1.5rem; flex: 1; display: flex; flex-direction: column;">
+        <div style="padding: 0.8rem 1.5rem; flex: 1; display: flex; flex-direction: column;">
           <h3 style="margin: 0 0 0.5rem 0;">${v.title}</h3>
           <p style="margin: 0 0 1rem 0; flex: 1; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${v.description}</p>
-          <div style="margin-bottom: 1.5rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
-            <span class="badge badge-indigo">${v.category}</span><span class="badge badge-teal">${icon}</span>
-            <span class="badge" style="background: #F8FAFC; color: #475569; border: 1px solid #E2E8F0; text-transform: none; letter-spacing: normal;" title="Procesado por">👤 ${v.createdBy || 'Desconocido'}</span>
+          <div style="margin-bottom: 1.0rem 1.5rem; display: flex; flex-direction: column; gap: 0.5rem;">
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+              <span class="badge badge-indigo">${v.category}</span><span class="badge badge-teal">${icon}</span>
+              <span class="badge" style="font-size: 0.7rem; background: #F8FAFC; color: #475569; border: 1px solid #E2E8F0; text-transform: none; letter-spacing: normal;" title="Procesado por">👤 ${v.createdBy || 'Desconocido'}</span>
+              <span class="badge" style="font-size: 0.7rem; color: #64748B;">📅 ${v.generatedDate || v.date || 'Desconocido'}</span>
+            </div>
+              </div>
           </div>
           <button class="ui-btn play-lib-btn" data-url="${v.url}" style="width: 100%;">▶ Aprender</button>
         </div>
