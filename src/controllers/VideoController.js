@@ -128,7 +128,9 @@ export class VideoController {
                         "https://pipedapi.syncpundit.io",
                         "https://pipedapi.lunar.icu",
                         "https://pipedapi.smnz.de",
-                        "https://de.piped.api.adminforge.de"
+                        "https://de.piped.api.adminforge.de",
+                        "https://pipedapi.tokhmi.xyz",
+                        "https://pipedapi.drgns.space"
                     ];
                     for (const instance of instances) {
                         try {
@@ -158,6 +160,11 @@ export class VideoController {
             }
 
             if (!pipedAudioUrl) {
+                if (isYouTube && process.env.RENDER) {
+                    console.warn("-> [Render] Piped API falló. No se puede usar yt-dlp por bloqueo de IP. Abortando análisis.");
+                    return res.status(503).json({ error: "Los servidores proxy están temporalmente saturados y YouTube bloquea la IP de Render. Intenta analizar el video en unos minutos." });
+                }
+                
                 // 2. Intentar obtener información (si falla, descargaremos a ciegas)
                 console.log("-> Obteniendo información del video con yt-dlp...");
                 try {
@@ -317,7 +324,9 @@ export class VideoController {
                         "https://pipedapi.syncpundit.io",
                         "https://pipedapi.lunar.icu",
                         "https://pipedapi.smnz.de",
-                        "https://de.piped.api.adminforge.de"
+                        "https://de.piped.api.adminforge.de",
+                        "https://pipedapi.tokhmi.xyz",
+                        "https://pipedapi.drgns.space"
                     ];
                     for (const instance of instances) {
                         try {
@@ -333,7 +342,12 @@ export class VideoController {
                     }
                 }
                 
-                console.warn("-> Todas las instancias de Piped fallaron. Recayendo en yt-dlp local...");
+                console.warn("-> Todas las instancias de Piped fallaron.");
+                if (process.env.RENDER) {
+                    console.warn("-> [Render] Bloqueo de IP detectado. Evitando yt-dlp y forzando IFrame en frontend.");
+                    return res.status(500).json({ error: "Piped falló y yt-dlp está bloqueado en Render. Forzando IFrame." });
+                }
+                console.warn("-> Recayendo en yt-dlp local...");
             }
 
             const formatType = "b[ext=mp4]/b";
@@ -353,7 +367,8 @@ export class VideoController {
             const directUrl = urls[urls.length - 1]; // Tomar la última línea en caso de advertencias residuales
             res.json({ directUrl, thumbnail: "" });
         } catch (error) {
-            console.error("Error al obtener URL directa:", error);
+            const shortError = error.stderr ? error.stderr.split('\n')[0] : error.message.split('\n')[0];
+            console.error("-> Error al obtener URL directa:", shortError);
             res.status(500).json({ error: "Error interno al obtener la URL directa." });
         }
     }
