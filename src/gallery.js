@@ -46,7 +46,7 @@ export function setupGallery(onPlayVideo) {
 
     const cardsHtml = paginatedVideos.map(v => {
       let icon = '🌐 Web';
-      if (v.platform.includes('youtube')) icon = '▶️ YouTube'; else if (v.platform.includes('x')) icon = '𝕏 X'; else if (v.platform.includes('tiktok')) icon = '🎵 TikTok'; else if (v.platform.includes('instagram')) icon = '📸 IG';
+      if (v.platform.includes('youtube')) icon = '▶️ YouTube'; else if (v.platform.includes('x')) icon = '𝕏 X'; else if (v.platform.includes('twitter')) icon = '𝕏 X'; else if (v.platform.includes('tiktok')) icon = '🎵 TikTok'; else if (v.platform.includes('instagram')) icon = '📸 IG'; else if (v.platform.includes('facebook')) icon = 'Facebook';
       return `<div class="gallery-card">
         <div style="height: 180px; background: #0f172a; position: relative;">
           ${v.thumbnail ? `<img src="${v.thumbnail}" style="width: 100%; height: 100%; object-fit: cover;" />` : `<div style="padding:2rem; text-align:center; color:#888; height:100%; display:flex; align-items:center; justify-content:center;">Sin portada</div>`}

@@ -92,7 +92,7 @@ export class VideoController {
     }
 
     static async processVideo(req, res) {
-        let { videoUrl, apiKey, model } = req.body;
+        let { videoUrl, apiKey, model, createdBy } = req.body;
         if (!videoUrl) {
             return res.status(400).json({ error: "La URL del video es requerida." });
         }
@@ -262,6 +262,7 @@ export class VideoController {
             analysis.platform = videoInfo.extractor_key ? videoInfo.extractor_key.toLowerCase() : (analysis.platform || "desconocido");
             analysis.totalTime = videoInfo.duration ? new Date(videoInfo.duration * 1000).toISOString().substr(11, 8) : (analysis.totalTime || "00:00:00");
             analysis.generatedDate = analysis.generatedDate || getGuatemalaDate();
+            if (createdBy) analysis.createdBy = createdBy;
             
             if (videoInfo.thumbnail) {
                 console.log("-> Descargando y cacheando thumbnail...");

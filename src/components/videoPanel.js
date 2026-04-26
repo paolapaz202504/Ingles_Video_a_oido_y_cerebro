@@ -309,6 +309,14 @@ export function setupVideoPanel(onProcess, onTimeUpdate, onStop) {
       return;
     }
 
+    const storedUser = localStorage.getItem('viooido_user');
+    if (!storedUser) {
+      showCustomAlert("Inicia sesión con tu cuenta de Gmail para guardar un video.", true);
+      return;
+    }
+    const user = JSON.parse(storedUser);
+    const createdBy = user.email;
+
     // Verificación en el frontend si el video ya se cargó en el reproductor
     let duration = 0;
     if (videoElement && !isNaN(videoElement.duration)) {
@@ -324,7 +332,7 @@ export function setupVideoPanel(onProcess, onTimeUpdate, onStop) {
 
     processButton.disabled = true;
     processButton.textContent = "Procesando...";
-    await onProcess(url);
+    await onProcess(url, createdBy);
     processButton.disabled = false;
     processButton.textContent = "Analizar Video";
   });
