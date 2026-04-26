@@ -187,7 +187,12 @@ export async function setupPlayer(videoUrl, auth, ear, dictation) {
       let descHtml = `<span id="desc-content">${words.length > 40 ? words.slice(0,40).join(" ")+"..." : desc}</span>`;
       if (words.length > 40) descHtml += `<button id="desc-toggle" style="background:none; border:none; color:#6366F1; font-weight:bold; cursor:pointer; padding:0; margin-left:4px;">Ver más</button>`;
       
-      elVi.innerHTML = `<h3 style="margin:0 0 0.5rem 0; font-size:1.25rem; color:#0F172A; line-height:1.4;">${title}</h3><p style="margin:0; font-size:0.95rem; color:#64748B; line-height:1.6;">${descHtml}</p>`;
+      let metaHtml = `<div style="margin-top: 0.75rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+        <span class="badge" style="background: #F8FAFC; color: #475569; border: 1px solid #E2E8F0; text-transform: none; letter-spacing: normal;" title="Procesado por">👤 ${analysis.createdBy || 'Desconocido'}</span>
+        <span class="badge" style="background: #F8FAFC; color: #64748B; border: 1px solid #E2E8F0; text-transform: none; letter-spacing: normal;">📅 Generado: ${analysis.generatedDate || 'Desconocido'}</span>
+      </div>`;
+      
+      elVi.innerHTML = `<h3 style="margin:0 0 0.5rem 0; font-size:1.25rem; color:#0F172A; line-height:1.4;">${title}</h3><p style="margin:0; font-size:0.95rem; color:#64748B; line-height:1.6;">${descHtml}</p>${metaHtml}`;
       
       if (words.length > 40) {
         let exp = false;
