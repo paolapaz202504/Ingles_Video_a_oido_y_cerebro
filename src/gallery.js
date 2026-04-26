@@ -57,6 +57,7 @@ export function setupGallery(onPlayVideo) {
           <p style="margin: 0 0 1rem 0; flex: 1; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${v.description}</p>
           <div style="margin-bottom: 1.5rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
             <span class="badge badge-indigo">${v.category}</span><span class="badge badge-teal">${icon}</span>
+            <span class="badge" style="background: #F8FAFC; color: #475569; border: 1px solid #E2E8F0; text-transform: none; letter-spacing: normal;" title="Procesado por">👤 ${v.createdBy || 'Desconocido'}</span>
           </div>
           <button class="ui-btn play-lib-btn" data-url="${v.url}" style="width: 100%;">▶ Aprender</button>
         </div>

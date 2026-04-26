@@ -36,7 +36,8 @@ export class VideoModel {
               tags: parsed.analysis.tags || [],
               date: parsed.analysis.generatedDate || "",
               platform: platformName,
-              totalTime: parsed.analysis.totalTime || ""
+              totalTime: parsed.analysis.totalTime || "",
+              createdBy: parsed.analysis.createdBy || ""
             });
           }
         } catch (err) {}

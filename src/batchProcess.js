@@ -6,6 +6,8 @@ export function setupBatchProcess(auth, gallery) {
   // ============================================================================
   window.batchReprocess = async (urls) => {
     const apiKey = auth.getApiKey();
+    const currentUser = auth.getCurrentUser();
+
     if (!apiKey) {
       console.error("❌ Falta la API Key de Gemini. Configúrala en la interfaz primero.");
       return;
@@ -25,7 +27,12 @@ export function setupBatchProcess(auth, gallery) {
         const response = await fetch("/api/process", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ videoUrl, apiKey, forceReprocess: true })
+          body: JSON.stringify({ 
+            videoUrl, 
+            apiKey, 
+            forceReprocess: true,
+            createdBy: currentUser ? currentUser.email : "Desconocido"
+          })
         });
         
         if (!response.ok) throw new Error((await response.json().catch(() => ({}))).error || `HTTP ${response.status}`);
