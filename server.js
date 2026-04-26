@@ -34,5 +34,5 @@ updateExistingCaches();
 
 // El servidor ahora escucha la aplicación configurada en app.js
 app.listen(port, () => {
-  console.log(`🚀 Servidor MVC iniciado correctamente en http://localhost:${port} v.2026.04.25 02:02:00`);
+  console.log(`🚀 Servidor MVC iniciado correctamente en http://localhost:${port} v.2026.04.25 18:29:00`);
 });

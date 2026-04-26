@@ -117,7 +117,7 @@ export class VideoController {
             console.log("-> Obteniendo información del video con yt-dlp...");
             let videoInfo = {};
             try {
-                const dumpArgs = ["--dump-json", "--no-warnings", "--no-check-certificate"];
+                const dumpArgs = ["--dump-json", "--no-warnings", "--no-check-certificate", "--js-runtimes", "node", "--extractor-args", "youtube:player_client=android"];
                 const cookiesPath = path.join(process.cwd(), 'cookies.txt');
                 if (fs.existsSync(cookiesPath)) {
                     dumpArgs.push("--cookies", cookiesPath);
@@ -151,7 +151,9 @@ export class VideoController {
                     "--no-check-certificate",
                     "--no-playlist",
                     "--prefer-free-formats",
-                    "--user-agent", STANDARD_USER_AGENT
+                    "--user-agent", STANDARD_USER_AGENT,
+                    "--js-runtimes", "node",
+                    "--extractor-args", "youtube:player_client=android"
                 ];
 
                 const cookiesPath = path.join(process.cwd(), 'cookies.txt');
@@ -239,8 +241,8 @@ export class VideoController {
                 if (directMp4 && directMp4.url) return res.json({ directUrl: directMp4.url, thumbnail: directMp4.thumbnail });
             }
 
-            const formatType = "best[ext=mp4]/best";
-            const ytArgs = [videoUrl, "--get-url", "-f", formatType, "--no-warnings", "--no-check-certificate", "--user-agent", STANDARD_USER_AGENT];
+            const formatType = "b[ext=mp4]/b";
+            const ytArgs = [videoUrl, "--get-url", "-f", formatType, "--no-warnings", "--no-check-certificate", "--user-agent", STANDARD_USER_AGENT, "--js-runtimes", "node", "--extractor-args", "youtube:player_client=android"];
             
             const cookiesPath = path.join(process.cwd(), 'cookies.txt');
             if (fs.existsSync(cookiesPath)) {
