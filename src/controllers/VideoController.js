@@ -270,7 +270,7 @@ export class VideoController {
             }
 
             // 6. Guardar en caché y responder
-            await CacheManager.saveAnalysisToCache(videoUrl, analysis.prompt, analysis);
+            await CacheManager.saveAnalysisToCache(videoUrl, "", analysis);
             console.log(`[Caché] Análisis guardado para: ${videoUrl}`);
 
             res.status(201).json({ analysis });

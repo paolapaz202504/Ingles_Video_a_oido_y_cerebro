@@ -1,46 +1,41 @@
 import fetch from "node-fetch";
-import { readdir, readFile } from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
 import { STANDARD_USER_AGENT } from "../utils/helpers.js"; // La ruta ahora es relativa a la nueva ubicación
+import { CacheManager } from "../utils/cacheManager.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 export class VideoModel {
   static async getLibraryVideos() {
-    const CACHE_GEMINI_DIR = path.join(__dirname, "../../cache/gemini_analysis"); // Ruta corregida para apuntar a la carpeta cache en la raíz
-    const files = await readdir(CACHE_GEMINI_DIR).catch(() => []);
+    // Usamos CacheManager (Google Cloud Storage) en lugar del disco local
+    const analyses = await CacheManager.getAllAnalyses();
     const videos = [];
     
-    for (const file of files) {
-      if (file.endsWith(".json")) {
-        try {
-          const content = await readFile(path.join(CACHE_GEMINI_DIR, file), "utf8");
-          const parsed = JSON.parse(content);
-          if (parsed.analysis && parsed.videoUrl) {
-            let platformName = parsed.analysis.platform || "otro";
-            if (!parsed.analysis.platform) {
-              if (/youtu\.be|youtube\.com/i.test(parsed.videoUrl)) platformName = "youtube";
-              else if (/x\.com|twitter\.com/i.test(parsed.videoUrl)) platformName = "x";
-              else if (/tiktok\.com/i.test(parsed.videoUrl)) platformName = "tiktok";
-              else if (/facebook\.com/i.test(parsed.videoUrl)) platformName = "facebook";
-              else if (/instagram\.com/i.test(parsed.videoUrl)) platformName = "instagram";
-            }
-            videos.push({
-              url: parsed.videoUrl,
-              title: parsed.analysis.videoTitleGenerated || parsed.analysis.videoTitle || "Sin título",
-              description: parsed.analysis.videoDescriptionGenerated || parsed.analysis.videoDescription || "",
-              thumbnail: parsed.analysis.videoThumbnail || "",
-              category: parsed.analysis.category || "General",
-              tags: parsed.analysis.tags || [],
-              date: parsed.analysis.generatedDate || "",
-              platform: platformName,
-              totalTime: parsed.analysis.totalTime || "",
-              createdBy: parsed.analysis.createdBy || ""
-            });
-          }
-        } catch (err) {}
+    for (const analysis of analyses) {
+      // CacheManager ya devuelve el objeto JSON parseado y listo
+      if (analysis && analysis.videoUrl) {
+        let platformName = analysis.platform || "otro";
+        if (!analysis.platform) {
+          if (/youtu\.be|youtube\.com/i.test(analysis.videoUrl)) platformName = "youtube";
+          else if (/x\.com|twitter\.com/i.test(analysis.videoUrl)) platformName = "x";
+          else if (/tiktok\.com/i.test(analysis.videoUrl)) platformName = "tiktok";
+          else if (/facebook\.com/i.test(analysis.videoUrl)) platformName = "facebook";
+          else if (/instagram\.com/i.test(analysis.videoUrl)) platformName = "instagram";
+        }
+        videos.push({
+          url: analysis.videoUrl,
+          title: analysis.videoTitleGenerated || analysis.videoTitle || "Sin título",
+          description: analysis.videoDescriptionGenerated || analysis.videoDescription || "",
+          thumbnail: analysis.videoThumbnail || "",
+          category: analysis.category || "General",
+          tags: analysis.tags || [],
+          date: analysis.generatedDate || "",
+          platform: platformName,
+          totalTime: analysis.totalTime || "",
+          createdBy: analysis.createdBy || ""
+        });
       }
     }
     return videos;
