@@ -12,6 +12,7 @@ let storage = null;
 let bucket = null;
 let bucketName = null;
 let storageInitPromise = null;
+let cacheRootFolder = "prod";
 
 async function initializeStorageApi() {
   if (!process.env.GOOGLE_APPLICATION_CREDENTIALS) {
@@ -19,8 +20,10 @@ async function initializeStorageApi() {
     throw new Error("Faltan variables de entorno para Google Cloud Storage");
   }
 
+  cacheRootFolder = process.env.CACHE_ROOT_FOLDER || "prod";
+
   storage = new Storage({
-    keyFilename: path.join(ROOT_DIR, process.env.GOOGLE_APPLICATION_CREDENTIALS)
+    keyFilename: path.resolve(ROOT_DIR, process.env.GOOGLE_APPLICATION_CREDENTIALS)
   });
   bucketName = process.env.GOOGLE_CLOUD_BUCKET_NAME || "viooido_cache_bucket";
   bucket = storage.bucket(bucketName);
@@ -98,7 +101,7 @@ export class CacheManager {
     await getStorage();
     if (bucket) {
       const hash = crypto.createHash("sha256").update(url).digest("hex");
-      const filePath = `prod/gemini_analysis/${hash}.json`;
+      const filePath = `${cacheRootFolder}/gemini_analysis/${hash}.json`;
       const parsedData = await readJsonFromBucket(filePath);
       if (parsedData && parsedData.analysis) return parsedData.analysis;
     }
@@ -110,7 +113,7 @@ export class CacheManager {
     await getStorage();
     if (bucket) {
       const hash = crypto.createHash("sha256").update(url).digest("hex");
-      const filePath = `prod/gemini_analysis/${hash}.json`;
+      const filePath = `${cacheRootFolder}/gemini_analysis/${hash}.json`;
       const cacheData = { videoUrl: url, prompt: prompt, analysis: analysis };
       await saveJsonToBucket(filePath, cacheData);
     }
@@ -121,7 +124,7 @@ export class CacheManager {
     await getStorage();
     if (bucket) {
       const hash = crypto.createHash("sha256").update(word.toLowerCase()).digest("hex");
-      const filePath = `prod/dictionary/${provider}/${hash}.json`;
+      const filePath = `${cacheRootFolder}/dictionary/${provider}/${hash}.json`;
       const parsedData = await readJsonFromBucket(filePath);
       if (parsedData && parsedData.data) return parsedData.data;
       return parsedData;
@@ -134,7 +137,7 @@ export class CacheManager {
     await getStorage();
     if (bucket) {
       const hash = crypto.createHash("sha256").update(word.toLowerCase()).digest("hex");
-      const filePath = `prod/dictionary/${provider}/${hash}.json`;
+      const filePath = `${cacheRootFolder}/dictionary/${provider}/${hash}.json`;
       const cacheData = { word: word.toLowerCase(), provider: provider, data: data };
       await saveJsonToBucket(filePath, cacheData);
     }
@@ -144,7 +147,7 @@ export class CacheManager {
     await getStorage();
     if (!bucket) return [];
     try {
-      const [files] = await bucket.getFiles({ prefix: 'prod/gemini_analysis/' });
+      const [files] = await bucket.getFiles({ prefix: `${cacheRootFolder}/gemini_analysis/` });
       const jsonFiles = files.filter(f => f.name.endsWith('.json'));
       if (jsonFiles.length === 0) return [];
       
@@ -181,7 +184,7 @@ export class CacheManager {
       await getStorage();
       if (!bucket) return thumbnailUrl;
 
-      const filePath = `prod/gemini_analysis_thumbnail/${filename}`;
+      const filePath = `${cacheRootFolder}/gemini_analysis_thumbnail/${filename}`;
       const file = bucket.file(filePath);
       const [exists] = await file.exists();
       
@@ -191,12 +194,12 @@ export class CacheManager {
         });
         if (!response.ok) return thumbnailUrl;
         
-        const buffer = Buffer.from(await response.arrayBuffer()); // Corrección del warning
+        const buffer = Buffer.from(await response.arrayBuffer());
         const mimeType = `image/${safeExt === 'jpg' ? 'jpeg' : safeExt}`;
         await saveBufferToBucket(filePath, buffer, mimeType);
       }
 
-      return `/thumbnails/${filename}`;
+      return `/api/thumbnails/${filename}`;
     } catch (error) {
       console.error("Error guardando miniatura en GCS:", error);
       return thumbnailUrl;
@@ -208,7 +211,7 @@ export class CacheManager {
     if (!bucket) return res.status(404).send("Not found");
 
     try {
-      const filePath = `prod/gemini_analysis_thumbnail/${filename}`;
+      const filePath = `${cacheRootFolder}/gemini_analysis_thumbnail/${filename}`;
       const file = bucket.file(filePath);
       const [exists] = await file.exists();
       if (!exists) return res.status(404).send("File not found in Storage");

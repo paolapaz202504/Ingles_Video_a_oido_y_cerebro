@@ -7,5 +7,6 @@ router.get("/library", VideoController.getLibrary);
 router.post("/process", VideoController.processVideo);
 router.post("/direct-url", VideoController.getDirectUrl);
 router.get("/proxy-video", VideoController.proxyVideo);
+router.get("/thumbnails/:filename", VideoController.getThumbnail);
 
 export default router;

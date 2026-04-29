@@ -29,6 +29,17 @@ export class VideoController {
         }
     }
 
+    static async getThumbnail(req, res) {
+        const { filename } = req.params;
+        if (!filename) return res.status(400).send("Nombre de archivo requerido");
+        try {
+            await CacheManager.streamThumbnailByName(filename, res);
+        } catch (error) {
+            console.error("Error al servir la miniatura:", error);
+            res.status(500).send("Error interno al obtener la miniatura.");
+        }
+    }
+
     // Helper para estandarizar la URL y garantizar que la caché sea exacta (evita duplicados)
     static _normalizeUrl(url) {
         let normalized = url.trim().replace(/^http:\/\//i, "https://");
