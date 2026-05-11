@@ -107,9 +107,6 @@ export class VideoController {
         if (!videoUrl) {
             return res.status(400).json({ error: "La URL del video es requerida." });
         }
-        if (!apiKey) {
-            return res.status(400).json({ error: "La API Key de Gemini es requerida." });
-        }
 
         // Normalizamos la URL para que cualquier variante genere el mismo Hash en la caché
         videoUrl = VideoController._normalizeUrl(videoUrl);
@@ -126,6 +123,10 @@ export class VideoController {
             if (completedPhases.includes("A") && completedPhases.includes("B") && completedPhases.includes("C")) {
                 console.log(`[Caché] Análisis COMPLETO HIT para: ${videoUrl}`);
                 return res.status(200).json({ analysis: cachedAnalysis });
+            }
+
+            if (!apiKey) {
+                return res.status(400).json({ error: "La API Key de Gemini es requerida para analizar nuevos videos." });
             }
 
             if (cachedAnalysis) {

@@ -302,20 +302,22 @@ export function setupVideoPanel(onProcess, onTimeUpdate, onStop) {
     if (onStop) onStop();
   });
 
-  processButton.addEventListener("click", async () => {
+  processButton.addEventListener("click", async (e) => {
     const url = videoUrlInput.value.trim();
     if (!url) {
       showCustomAlert("Debes pegar un link de video primero.", true);
       return;
     }
 
+    const isManualClick = e && e.isTrusted;
     const storedUser = localStorage.getItem('viooido_user');
-    if (!storedUser) {
+    
+    if (isManualClick && !storedUser) {
       showCustomAlert("Inicia sesión con tu cuenta de Gmail para guardar un video.", true);
       return;
     }
-    const user = JSON.parse(storedUser);
-    const createdBy = user.email;
+    const user = storedUser ? JSON.parse(storedUser) : null;
+    const createdBy = user ? user.email : "Desconocido";
 
     // Verificación en el frontend si el video ya se cargó en el reproductor
     let duration = 0;

@@ -30,8 +30,7 @@ export async function setupPlayer(videoUrl, auth, ear, dictation) {
   };
 
   try {
-    const apiKey = auth.getApiKey();
-    if (!apiKey) throw new Error("No es posible analizar el video. Falta la API Key, configúrala en el botón superior.");
+    const apiKey = auth.getApiKey() || "";
 
     const currentUser = auth.getCurrentUser ? auth.getCurrentUser() : null;
     const createdBy = currentUser ? currentUser.email : "Desconocido";
