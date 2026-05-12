@@ -184,9 +184,9 @@ export class VideoController {
                 }
             }
 
-            // Bloquear explícitamente en el backend si supera los 5 minutos (300 segundos)
-            if (videoInfo.duration && videoInfo.duration > 300) {
-                return res.status(400).json({ error: "La duración del video no debe superar los 5 minutos." });
+            // Bloquear explícitamente en el backend si supera los 6 minutos (360 segundos)
+            if (videoInfo.duration && videoInfo.duration > 360) {
+                return res.status(400).json({ error: "La duración del video no debe superar los 6 minutos." });
             }
 
             let base64Audio = null;
