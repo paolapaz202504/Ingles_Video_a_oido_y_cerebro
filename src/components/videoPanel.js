@@ -130,8 +130,8 @@ export function setupVideoPanel(onProcess, onTimeUpdate, onStop) {
           playerVars: { 'playsinline': 1 },
           events: {
             'onReady': (event) => {
-              if (event.target.getDuration() > 300) {
-                showCustomAlert("El video no debe superar los 5 minutos.", true);
+              if (event.target.getDuration() > 360) {
+                showCustomAlert("El video no debe superar los 6 minutos.", true);
                 videoContainer.innerHTML = "";
                 ytPlayer = null;
               }
@@ -180,8 +180,8 @@ export function setupVideoPanel(onProcess, onTimeUpdate, onStop) {
       }
       video.src = url;
       video.addEventListener("loadedmetadata", () => {
-        if (video.duration > 300) {
-          showCustomAlert("El video no debe superar los 5 minutos.", true);
+        if (video.duration > 360) {
+          showCustomAlert("El video no debe superar los 6 minutos.", true);
           videoContainer.innerHTML = "";
           videoElement = null;
         }
@@ -327,8 +327,8 @@ export function setupVideoPanel(onProcess, onTimeUpdate, onStop) {
       duration = ytPlayer.getDuration();
     }
     
-    if (duration > 300) {
-      showCustomAlert("El video no debe superar los 5 minutos.", true);
+    if (duration > 360) {
+      showCustomAlert("El video no debe superar los 6 minutos.", true);
       return;
     }
 
