@@ -148,7 +148,7 @@ export class GeminiModel {
     } else {
       if (!base64Data) throw new Error("El audio no fue procesado pero es requerido para la Fase A.");
       for (const model of models) {
-        if (parsedDataA) break;
+        if (parsedDataA || (lastError && lastError.isFatal)) break;
         for (let attempt = 1; attempt <= 2; attempt++) {
           console.log(`-> Fase A - Modelo: ${model} (Intento ${attempt}/2)...`);
           try {
@@ -158,7 +158,15 @@ export class GeminiModel {
               body: JSON.stringify({ contents: [{ parts: [{ text: promptPhaseA }, { inlineData: { mimeType: mimeType, data: base64Data } }] }], generationConfig: { temperature: 0.2, maxOutputTokens: 8192, responseMimeType: "application/json" } })
             });
             
-            if (!responseA.ok) throw new Error(`HTTP ${responseA.status}`);
+            if (!responseA.ok) {
+              const errText = await responseA.text();
+              if (errText.includes("API key expired") || errText.includes("API_KEY_INVALID")) {
+                const e = new Error("Genera un nuevo API KEY de GEMINI para continuar. Tu clave actual ha expirado o es inválida.");
+                e.isFatal = true;
+                throw e;
+              }
+              throw new Error(`HTTP ${responseA.status} - Detalles: ${errText}`);
+            }
             const dataA = await responseA.json();
             const messageA = dataA?.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
             
@@ -190,6 +198,7 @@ export class GeminiModel {
           } catch (err) {
             lastError = err;
             console.log(`   ❌ [Error Fase A]: ${err.message}`);
+            if (err.isFatal) break;
           }
         }
       }
@@ -277,7 +286,7 @@ export class GeminiModel {
       const modelsPhaseB = activeModelA ? [activeModelA, ...models.filter(m => m !== activeModelA)] : models;
 
       for (const model of modelsPhaseB) {
-        if (parsedDataB) break;
+        if (parsedDataB || (lastError && lastError.isFatal)) break;
         for (let attempt = 1; attempt <= 2; attempt++) {
           console.log(`-> Fase B - Modelo: ${model} (Intento ${attempt}/2)...`);
           try {
@@ -287,7 +296,15 @@ export class GeminiModel {
               body: JSON.stringify({ contents: [{ parts: [{ text: promptPhaseB }] }], generationConfig: { temperature: 0.2, maxOutputTokens: 8192, responseMimeType: "application/json" } })
             });
             
-            if (!responseB.ok) throw new Error(`HTTP ${responseB.status}`);
+            if (!responseB.ok) {
+              const errText = await responseB.text();
+              if (errText.includes("API key expired") || errText.includes("API_KEY_INVALID")) {
+                const e = new Error("Genera un nuevo API KEY de GEMINI para continuar. Tu clave actual ha expirado o es inválida.");
+                e.isFatal = true;
+                throw e;
+              }
+              throw new Error(`HTTP ${responseB.status} - Detalles: ${errText}`);
+            }
             const dataB = await responseB.json();
             const messageB = dataB?.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
             
@@ -298,13 +315,16 @@ export class GeminiModel {
             if (!phases.includes("B")) phases.push("B");
             break;
           } catch (err) {
+            lastError = err;
             console.log(`   ❌ [Error Fase B]: ${err.message}`);
+            if (err.isFatal) break;
           }
         }
       }
     }
 
     if (!parsedDataB) {
+      if (lastError && lastError.isFatal) throw lastError;
       console.warn("\n⚠️ ADVERTENCIA: La Fase B falló. Se guardará el análisis sin lingüística para no perder la transcripción.");
       parsedDataB = previousAnalysis || { keywords: "", summary: "", summary_es: "", verbs: [], phasal_verbs: [], colloquial_expressions: [] };
     }
@@ -343,7 +363,7 @@ export class GeminiModel {
       const modelsPhaseC = activeModelB ? [activeModelB, ...models.filter(m => m !== activeModelB)] : models;
 
       for (const model of modelsPhaseC) {
-        if (parsedDataC) break;
+        if (parsedDataC || (lastError && lastError.isFatal)) break;
         for (let attempt = 1; attempt <= 2; attempt++) {
           console.log(`-> Fase C - Modelo: ${model} (Intento ${attempt}/2)...`);
           try {
@@ -353,7 +373,15 @@ export class GeminiModel {
               body: JSON.stringify({ contents: [{ parts: [{ text: promptPhaseC }] }], generationConfig: { temperature: 0.3, maxOutputTokens: 8192, responseMimeType: "application/json" } })
             });
             
-            if (!responseC.ok) throw new Error(`HTTP ${responseC.status}`);
+            if (!responseC.ok) {
+              const errText = await responseC.text();
+              if (errText.includes("API key expired") || errText.includes("API_KEY_INVALID")) {
+                const e = new Error("Genera un nuevo API KEY de GEMINI para continuar. Tu clave actual ha expirado o es inválida.");
+                e.isFatal = true;
+                throw e;
+              }
+              throw new Error(`HTTP ${responseC.status} - Detalles: ${errText}`);
+            }
             const dataC = await responseC.json();
             const messageC = dataC?.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
             
@@ -364,13 +392,16 @@ export class GeminiModel {
             if (!phases.includes("C")) phases.push("C");
             break;
           } catch (err) {
+            lastError = err;
             console.log(`   ❌ [Error Fase C]: ${err.message}`);
+            if (err.isFatal) break;
           }
         }
       }
     }
 
     if (!parsedDataC) {
+      if (lastError && lastError.isFatal) throw lastError;
       console.warn("\n⚠️ ADVERTENCIA: La Fase C falló. Se guardará el análisis sin cuestionarios.");
       parsedDataC = previousAnalysis || { quiz: [], content_quiz: [] };
     }

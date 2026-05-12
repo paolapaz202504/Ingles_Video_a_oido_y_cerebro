@@ -248,7 +248,15 @@ export class VideoController {
                     console.log("-> Convirtiendo audio a Base64...");
                     const audioBuffer = await readFile(audioPath);
                     base64Audio = audioBuffer.toString("base64");
-                    mimeType = (ext === '.m4a' || ext === '.mp4') ? 'audio/mp4' : 'audio/webm';
+                    
+                    // Determinar el MIME type correcto basado en la extensión real del archivo
+                    if (ext === '.mp3') mimeType = 'audio/mp3';
+                    else if (ext === '.wav') mimeType = 'audio/wav';
+                    else if (ext === '.ogg') mimeType = 'audio/ogg';
+                    else if (ext === '.flac') mimeType = 'audio/flac';
+                    else if (ext === '.webm') mimeType = 'audio/webm';
+                    else if (ext === '.aac') mimeType = 'audio/aac';
+                    else mimeType = 'audio/mp4'; // fallback seguro por defecto (incluye .m4a / .mp4)
                 }
             } else {
                 console.log("-> ⏭️ Fase A completada previamente. Saltando descarga de yt-dlp...");
@@ -289,7 +297,10 @@ export class VideoController {
 
         } catch (error) {
             console.error("Error procesando el video:", error);
-            res.status(500).json({ error: `Error al procesar el video: ${error.message}` });
+            const errorMessage = error.message.includes("Genera un nuevo API KEY") 
+                ? error.message 
+                : `Error al procesar el video: ${error.message}`;
+            res.status(500).json({ error: errorMessage });
         } finally {
             // 7. Limpiar el directorio temporal
             if (tempDir) {

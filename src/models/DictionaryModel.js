@@ -67,9 +67,14 @@ export class DictionaryModel {
           console.info(`Diccionario: Funcionó con el modelo ${model}. Palabra: ${word}`);
           return JSON.parse(text);
         } else {
+          const errText = await response.text();
+          if (errText.includes("API key expired") || errText.includes("API_KEY_INVALID")) {
+            throw new Error("Genera un nuevo API KEY de GEMINI para continuar. Tu clave actual ha expirado o es inválida.");
+          }
           console.warn(`Diccionario: El modelo ${model} falló (${response.status}).`);
         }
       } catch (err) {
+        if (err.message.includes("Genera un nuevo API KEY")) throw err;
         console.warn(`Diccionario: Fallo con el modelo ${model}. Error: ${err.message}`);
       }
     } throw new Error(`Utilice otra configuración para obtener el diccionario de la palabra ${word}`);
